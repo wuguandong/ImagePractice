@@ -1,0 +1,82 @@
+/*中心栏*/
+QWidget[form="widget_center"]{
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+	background-color: rgb(230, 230, 230);
+}
+
+/*工具栏*/
+QWidget[form="widget_tool"]{
+	border: 1px solid rgb(198, 198, 198);
+	border-radius: 5px;
+	background-color: rgb(243, 242, 241);
+}
+
+/*窗口操作按钮*/
+QPushButton[form="btn_close"]{
+	image:url(:/image/close.png);
+	padding:10px;
+	background:transparent;
+	border:none;
+}
+QPushButton[form="btn_close"]:hover{
+	background:rgba(255, 0, 0, 0.9);
+}
+QPushButton[form="btn_close"]:pressed{
+	background:rgb(241, 112, 122);
+}
+QPushButton[form="btn_max"]{
+	image:url(:/image/doc-result-max.png);
+	padding:10px;
+	background:transparent;
+	border:none;
+}
+QPushButton[form="btn_max"]:hover{
+	background:rgba(0, 0, 0, 0.3);
+}
+QPushButton[form="btn_max"]:pressed{
+	background:rgba(0, 0, 0, 0.5);
+}
+QPushButton[form="btn_max_back"]{
+	image:url(:/image/doc-mini-max.png);
+	padding:10px;
+	background:transparent;
+	border:none;
+}
+QPushButton[form="btn_max_back"]:hover{
+	background:rgba(0, 0, 0, 0.3);
+}
+QPushButton[form="btn_max_back"]:pressed{
+	background:rgba(0, 0, 0, 0.5);
+}
+QPushButton[form="btn_min"]{
+	image:url(:/image/minimum.png);
+	padding:10px;
+	background:transparent;
+	border:none;
+}
+QPushButton[form="btn_min"]:hover{
+	background:rgba(0, 0, 0, 0.3);
+}
+QPushButton[form="btn_min"]:pressed{
+	background:rgba(0, 0, 0, 0.5);
+}
+
+/*菜单栏按钮*/
+QPushButton[form="btn_menu"]{
+	color: rgb(230, 230, 230);
+	font-size: 10pt;
+	font-weight: bold;
+	background: transparent;
+	border-style: solid;
+	border-width:0 0 2px 0;
+	border-color: transparent;
+
+}
+QPushButton[form="btn_menu"]:hover{
+	border-color: rgb(240, 240, 240);
+}
+QPushButton[form="btn_menu"]:checked{
+	color: white;
+	border-color: white;
+}
