@@ -20,6 +20,7 @@ class Widget(QWidget):
         self.__contrastViewer = ImageViewer()  # 原图查看器
         self.__settings = QSettings()
         self.__imgList = []  # 图片列表
+        self.__mousePressPos = QPoint()  # 鼠标按下位置
 
         # 程序名称和图标
         self.setWindowTitle("图像实践")
@@ -29,7 +30,7 @@ class Widget(QWidget):
         self.ui.widget_bg.setAutoFillBackground(True)
 
         # 无边框窗口
-        # self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         # widget_center阴影
@@ -39,6 +40,9 @@ class Widget(QWidget):
         self.shadow.setBlurRadius(30)
         self.ui.widget_center_container.setGraphicsEffect(self.shadow)
         self.shadow.setEnabled(False)  # 禁用阴影
+
+        # 禁止widget_center将鼠标事件传到父级
+        self.ui.widget_center.setAttribute(Qt.WA_NoMousePropagation)
 
         # 设置widget_imageviewer_container布局
         imageviewerContainerLayout = QHBoxLayout(self.ui.widget_imageviewer_container)
@@ -66,6 +70,15 @@ class Widget(QWidget):
         self.ui.widget_menu.setDisabled(True)
         self.__contrastViewer.hide()
 
+        # 最小化按钮槽函数
+        self.ui.btn_min.clicked.connect(self.__minBtnSlot)
+
+        # 最大化按钮槽函数
+        self.ui.btn_max.clicked.connect(self.__maxBtnSlot)
+
+        # 关闭按钮槽函数
+        self.ui.btn_close.clicked.connect(self.__closeBtnSlot)
+
         # 打开图片按钮槽函数
         self.__openImgBtn.clicked.connect(self.__openImgBtnSlot)
 
@@ -84,6 +97,37 @@ class Widget(QWidget):
         # 对比按钮槽函数
         self.ui.btn_contrast.clicked.connect(self.__contrastBtnSlot)
 
+    # 重写绘图函数
+    def paintEvent(self, event):
+        # 绘制窗体阴影
+        shadow_margin = 15
+        shadow_pixmap = QPixmap('://image/mainWnd_shadow.png')
+        painter = QPainter(self)
+        pngTop = QRect(shadow_margin, 0, shadow_pixmap.width() - shadow_margin * 2, shadow_margin)
+        winTop = QRect(shadow_margin, 0, self.width() - shadow_margin * 2, shadow_margin)
+        painter.drawPixmap(winTop, shadow_pixmap, pngTop)
+        pngBottom = QRect(shadow_margin, shadow_pixmap.height() - shadow_margin, shadow_pixmap.width() - shadow_margin * 2, shadow_margin)
+        winBottom = QRect(shadow_margin, self.height() - shadow_margin, self.width() - shadow_margin * 2, shadow_margin)
+        painter.drawPixmap(winBottom, shadow_pixmap, pngBottom)
+        pngLeft = QRect(0, shadow_margin, shadow_margin, shadow_pixmap.height() - shadow_margin * 2)
+        winLeft = QRect(0, shadow_margin, shadow_margin, self.height() - shadow_margin * 2)
+        painter.drawPixmap(winLeft, shadow_pixmap, pngLeft)
+        pngRight = QRect(shadow_pixmap.width() - shadow_margin, shadow_margin, shadow_margin, shadow_pixmap.height() - shadow_margin * 2)
+        winRight = QRect(self.width() - shadow_margin, shadow_margin, shadow_margin, self.height() - shadow_margin * 2)
+        painter.drawPixmap(winRight, shadow_pixmap, pngRight)
+        pngLeftTop = QRect(0, 0, shadow_margin, shadow_margin)
+        winLeftTop = QRect(0, 0, shadow_margin, shadow_margin)
+        painter.drawPixmap(winLeftTop, shadow_pixmap, pngLeftTop)
+        pngRightTop = QRect(shadow_pixmap.width() - shadow_margin, 0, shadow_margin, shadow_margin)
+        winRightTop = QRect(self.width() - shadow_margin, 0, shadow_margin, shadow_margin)
+        painter.drawPixmap(winRightTop, shadow_pixmap, pngRightTop)
+        pngLeftBottom = QRect(0, shadow_pixmap.height() - shadow_margin, shadow_margin, shadow_margin)
+        winLeftBottom = QRect(0, self.height() - shadow_margin, shadow_margin, shadow_margin)
+        painter.drawPixmap(winLeftBottom, shadow_pixmap, pngLeftBottom)
+        pngRightBottom = QRect(shadow_pixmap.width() - shadow_margin, shadow_pixmap.height() - shadow_margin, shadow_margin, shadow_margin)
+        winRightBottom = QRect(self.width() - shadow_margin, self.height() - shadow_margin, shadow_margin, shadow_margin)
+        painter.drawPixmap(winRightBottom, shadow_pixmap, pngRightBottom)
+
     # 重写改变窗口大小事件
     def resizeEvent(self, event):
         # 背景图片大小自适应
@@ -101,6 +145,37 @@ class Widget(QWidget):
 
         # 调整CenterWidget的大小
         self.ui.widget_center.setFixedSize(ownerSize)
+
+    # 重写鼠标按下事件
+    def mousePressEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            self.__mousePressPos = event.pos()
+
+    # 重写鼠标移动事件
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            self.move(self.pos() + event.pos() - self.__mousePressPos)
+
+    # 最小化按钮槽函数
+    def __minBtnSlot(self):
+        self.showMinimized()
+
+    # 最大化按钮槽函数
+    def __maxBtnSlot(self):
+        if not self.isMaximized():  # 切换至全屏状态
+            self.layout().setContentsMargins(0, 0, 0, 0)
+            self.showMaximized()
+            self.ui.btn_max.setProperty('form', 'btn_max_back')
+        else:  # 切换为窗口状态
+            self.layout().setContentsMargins(15, 15, 15, 15)
+            self.showNormal()
+            self.ui.btn_max.setProperty('form', 'btn_max')
+
+        self.style().polish(self.ui.btn_max)
+
+    # 关闭按钮槽函数
+    def __closeBtnSlot(self):
+        self.close()
 
     # 菜单按钮槽函数
     def __menuBtnSlot(self):

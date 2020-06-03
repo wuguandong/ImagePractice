@@ -24,8 +24,8 @@ class ImageViewer(QWidget):
         self.__zoomCenterOnCursor = False  # 是否以鼠标为中心缩放
 
         # 临时
-        self.setPalette(QPalette(QColor(255, 255, 0, 20)))
-        self.setAutoFillBackground(True)
+        # self.setPalette(QPalette(QColor(255, 255, 0, 20)))
+        # self.setAutoFillBackground(True)
 
     # 重写绘图事件
     def paintEvent(self, event):
@@ -106,7 +106,8 @@ class ImageViewer(QWidget):
             ImageViewer.__scale = min(self.width() / self.img.width(), self.height() / self.img.height())
         else:
             ImageViewer.__scale = 1.0
-        self.update()  # 刷新
+
+        self.update()
 
     # 有动画效果的缩放
     # 注：只需要调用一个实例的该方法即可缩放全部实例

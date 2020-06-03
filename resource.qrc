@@ -6,5 +6,6 @@
         <file>image/doc-mini-max.png</file>
         <file>image/doc-result-max.png</file>
         <file>image/minimum.png</file>
+        <file>image/mainWnd_shadow.png</file>
     </qresource>
 </RCC>
