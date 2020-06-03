@@ -13,6 +13,7 @@ class ImageViewer(QWidget):
     # 类变量
     __offset = QPointF()  # 绘图偏移量
     __scale = 1.0  # 绘图缩放比例
+    __rotateAngle = 0.0  # 旋转角度（角度制）
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -121,10 +122,17 @@ class ImageViewer(QWidget):
         animation.setEasingCurve(QEasingCurve.InOutCubic)
         animation.start()
 
-    # 旋转图片
+    # 旋转图片 向右旋转90°
     # 注：只需要调用一个实例的该方法即可缩放全部实例
     def rotateImage(self):
-        pass
+        tf = QTransform()
+        tf.rotate(-90)
+        self.img = self.img.transformed(tf)
+
+        # 适应窗口显示
+        self.fitDisplay()
+
+        self.update()
 
     # 是否可以完整显示图像
     def __canFullDisplay(self):

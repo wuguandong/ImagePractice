@@ -75,6 +75,12 @@ class Widget(QWidget):
         # 放大按钮槽函数
         self.ui.btn_zoomin.clicked.connect(lambda: self.__viewer.animatedZoom(self.__viewer.propScale * 2))
 
+        # 适应显示按钮槽函数
+        self.ui.btn_fit_display.clicked.connect(self.__fitDisplayBtnSlot)
+
+        # 旋转按钮槽函数
+        self.ui.btn_rotate.clicked.connect(self.__rotateBtnSlot)
+
         # 对比按钮槽函数
         self.ui.btn_contrast.clicked.connect(self.__contrastBtnSlot)
 
@@ -139,6 +145,16 @@ class Widget(QWidget):
 
         # 弹出中心窗体
         self.__popCenterWidget()
+
+    # 适应显示按钮槽函数
+    def __fitDisplayBtnSlot(self):
+        self.__viewer.fitDisplay()
+        self.__contrastViewer.fitDisplay()
+
+    # 旋转按钮槽函数
+    def __rotateBtnSlot(self):
+        self.__viewer.rotateImage()
+        self.__contrastViewer.rotateImage()
 
     # 对比按钮槽函数
     def __contrastBtnSlot(self, b):
