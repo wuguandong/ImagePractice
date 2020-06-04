@@ -327,7 +327,7 @@ color: rgb(23, 46, 83);</string>
           </spacer>
          </item>
          <item>
-          <widget class="QPushButton" name="btn_save">
+          <widget class="QToolButton" name="btn_save">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -336,18 +336,27 @@ color: rgb(23, 46, 83);</string>
            </property>
            <property name="minimumSize">
             <size>
-             <width>30</width>
+             <width>65</width>
              <height>30</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>30</width>
+             <width>65</width>
              <height>30</height>
             </size>
            </property>
            <property name="text">
-            <string>存</string>
+            <string>保存</string>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>18</width>
+             <height>18</height>
+            </size>
+           </property>
+           <property name="toolButtonStyle">
+            <enum>Qt::ToolButtonTextBesideIcon</enum>
            </property>
           </widget>
          </item>
@@ -457,8 +466,8 @@ color: rgb(23, 46, 83);</string>
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>1398</width>
-           <height>1002</height>
+           <width>1150</width>
+           <height>650</height>
           </rect>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -2245,7 +2254,7 @@ color: rgb(23, 46, 83);</string>
                </property>
                <layout class="QHBoxLayout" name="horizontalLayout_7">
                 <property name="spacing">
-                 <number>10</number>
+                 <number>20</number>
                 </property>
                 <property name="leftMargin">
                  <number>20</number>
@@ -2260,7 +2269,7 @@ color: rgb(23, 46, 83);</string>
                  <number>0</number>
                 </property>
                 <item>
-                 <widget class="QPushButton" name="btn_undo">
+                 <widget class="QToolButton" name="btn_undo">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -2269,18 +2278,30 @@ color: rgb(23, 46, 83);</string>
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>70</width>
+                    <width>65</width>
                     <height>30</height>
                    </size>
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>70</width>
+                    <width>65</width>
                     <height>30</height>
                    </size>
                   </property>
+                  <property name="layoutDirection">
+                   <enum>Qt::LeftToRight</enum>
+                  </property>
                   <property name="text">
-                   <string>← 撤销</string>
+                   <string>撤销</string>
+                  </property>
+                  <property name="iconSize">
+                   <size>
+                    <width>18</width>
+                    <height>18</height>
+                   </size>
+                  </property>
+                  <property name="toolButtonStyle">
+                   <enum>Qt::ToolButtonTextBesideIcon</enum>
                   </property>
                  </widget>
                 </item>
@@ -2294,18 +2315,24 @@ color: rgb(23, 46, 83);</string>
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>70</width>
+                    <width>65</width>
                     <height>30</height>
                    </size>
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>70</width>
+                    <width>65</width>
                     <height>30</height>
                    </size>
                   </property>
                   <property name="text">
-                   <string>→ 重做</string>
+                   <string>重做</string>
+                  </property>
+                  <property name="iconSize">
+                   <size>
+                    <width>18</width>
+                    <height>18</height>
+                   </size>
                   </property>
                   <property name="toolButtonStyle">
                    <enum>Qt::ToolButtonTextBesideIcon</enum>
@@ -2346,7 +2373,7 @@ color: rgb(23, 46, 83);</string>
                    </size>
                   </property>
                   <property name="text">
-                   <string>大</string>
+                   <string/>
                   </property>
                  </widget>
                 </item>
@@ -2371,7 +2398,7 @@ color: rgb(23, 46, 83);</string>
                    </size>
                   </property>
                   <property name="text">
-                   <string>小</string>
+                   <string/>
                   </property>
                  </widget>
                 </item>
@@ -2396,7 +2423,7 @@ color: rgb(23, 46, 83);</string>
                    </size>
                   </property>
                   <property name="text">
-                   <string>适</string>
+                   <string/>
                   </property>
                  </widget>
                 </item>
@@ -2421,7 +2448,7 @@ color: rgb(23, 46, 83);</string>
                    </size>
                   </property>
                   <property name="text">
-                   <string>转</string>
+                   <string/>
                   </property>
                  </widget>
                 </item>

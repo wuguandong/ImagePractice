@@ -24,8 +24,8 @@ class ImageViewer(QWidget):
         self.__zoomCenterOnCursor = False  # 是否以鼠标为中心缩放
 
         # 临时
-        self.setPalette(QPalette(QColor(0, 255, 0, 80)))
-        self.setAutoFillBackground(True)
+        # self.setPalette(QPalette(QColor(0, 255, 0, 80)))
+        # self.setAutoFillBackground(True)
 
     # 重写绘图事件
     def paintEvent(self, event):

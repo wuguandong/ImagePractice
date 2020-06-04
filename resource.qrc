@@ -7,5 +7,20 @@
         <file>image/doc-result-max.png</file>
         <file>image/minimum.png</file>
         <file>image/mainWnd_shadow.png</file>
+        <file>image/prescale.png</file>
+        <file>image/prescale_click.png</file>
+        <file>image/prescale_hover.png</file>
+        <file>image/rotate.png</file>
+        <file>image/rotate_click.png</file>
+        <file>image/rotate_hover.png</file>
+        <file>image/zoomin.png</file>
+        <file>image/zoomin_click.png</file>
+        <file>image/zoomin_hover.png</file>
+        <file>image/zoomout.png</file>
+        <file>image/zoomout_click.png</file>
+        <file>image/zoomout_hover.png</file>
+        <file>image/redo.png</file>
+        <file>image/undo.png</file>
+        <file>image/save.png</file>
     </qresource>
 </RCC>

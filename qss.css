@@ -73,6 +73,13 @@ QPushButton[form="btn_open_img"]:hover{
 	background: rgb(34, 70, 124);
 }
 
+/*保存按钮*/
+QToolButton[form="btn_save"]{
+	color: rgb(230, 230, 230);
+	background:transparent;
+	qproperty-icon: url(:/image/save.png);
+}
+
 /*菜单栏按钮*/
 QPushButton[form="btn_menu"]{
 	color: rgb(230, 230, 230);
@@ -91,6 +98,85 @@ QPushButton[form="btn_menu"]:checked{
 	color: white;
 	border-color: white;
 }
+
+/*撤销重做按钮*/
+QToolButton[form="btn_undo"]{
+	color: rgb(74, 74, 74);
+	background: transparent;
+	qproperty-icon: url(:/image/undo.png);
+}
+QToolButton[form="btn_undo"]:disabled{
+	color: rgb(138, 138, 138);
+}
+QToolButton[form="btn_redo"]{
+	color: rgb(74, 74, 74);
+	background: transparent;
+	qproperty-icon: url(:/image/redo.png);
+}
+QToolButton[form="btn_redo"]:disabled{
+	color: rgb(138, 138, 138);
+}
+
+/*图片操作按钮*/
+QPushButton[form="btn_zoomin"]{
+	image:url(:/image/zoomin.png);
+	background:transparent;
+	border:none;
+}
+QPushButton[form="btn_zoomin"]:hover{
+	image:url(:/image/zoomin_hover.png);
+}
+QPushButton[form="btn_zoomin"]:pressed{
+	image:url(:/image/zoomin_click.png);
+}
+QPushButton[form="btn_zoomout"]{
+	image:url(:/image/zoomout.png);
+	background:transparent;
+	border:none;
+}
+QPushButton[form="btn_zoomout"]:hover{
+	image:url(:/image/zoomout_hover.png);
+}
+QPushButton[form="btn_zoomout"]:pressed{
+	image:url(:/image/zoomout_click.png);
+}
+QPushButton[form="btn_fit_display"]{
+	image:url(:/image/prescale.png);
+	background:transparent;
+	border:none;
+}
+QPushButton[form="btn_fit_display"]:hover{
+	image:url(:/image/prescale_hover.png);
+}
+QPushButton[form="btn_fit_display"]:pressed{
+	image:url(:/image/prescale_click.png);
+}
+QPushButton[form="btn_rotate"]{
+	image:url(:/image/rotate.png);
+	background:transparent;
+	border:none;
+}
+QPushButton[form="btn_rotate"]:hover{
+	image:url(:/image/rotate_hover.png);
+}
+QPushButton[form="btn_rotate"]:pressed{
+	image:url(:/image/rotate_click.png);
+}
+QPushButton[form="btn_contrast"]{
+	color: rgb(74, 74, 74);
+	background:transparent;
+	border: 1px solid rgb(74, 74, 74);
+	border-radius: 5px;
+}
+QPushButton[form="btn_contrast"]:hover{
+	color: rgb(50, 50, 50);
+	border-color: rgb(50, 50, 50);
+}
+QPushButton[form="btn_contrast"]:on{
+	color: rgb(59, 119, 198);
+	border-color: rgb(59, 119, 198);
+}
+
 
 /*深色按钮*/
 QPushButton[form="btn_dark"]{
@@ -113,18 +199,6 @@ QPushButton[form="btn_light"]:hover{
 QPushButton[form="btn_light"]:pressed{
 	border-color: rgb(59, 119, 198);
 }
-
-/*浅色小按钮*/
-/* QPushButton[form="btn_light_small"]{ */
-	/* border: 1px solid rgb(201, 201, 201); */
-	/* border-radius:3px; */
-/* } */
-/* QPushButton[form="btn_light_small"]:hover{ */
-	/* border-color: rgb(59, 119, 198); */
-/* } */
-/* QPushButton[form="btn_light_small"]:pressed{ */
-	/* border-color: rgb(59, 119, 198); */
-/* } */
 
 /*深色大按钮*/
 QPushButton[form="btn_dark_big"]{

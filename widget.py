@@ -22,6 +22,7 @@ class Widget(QWidget):
         self.__menuBtnGroup = QButtonGroup(self)  # 菜单按钮组
         self.__checkedMenuBtn = None  # 当前选中的菜单按钮
         self.__openImgBtn = QPushButton('打开图片', self.ui.widget_center_container)  # 打开图片按钮
+        self.__imgFileName = ''  # 图片文件名称
         self.__viewer = ImageViewer()  # 图片查看器
         self.__contrastViewer = ImageViewer()  # 原图查看器
         self.__settings = QSettings()
@@ -73,7 +74,15 @@ class Widget(QWidget):
         self.ui.btn_close.setProperty('form', 'btn_close')
         self.__openImgBtn.setProperty('form', 'btn_open_img')  # 打开图片按钮
         self.__openImgBtn.setFixedSize(350, 50)
+        self.ui.btn_save.setProperty('form', 'btn_save')  # 保存按钮
         self.ui.btn_brightness_ok.setProperty('form', 'btn_dark')  # 工具栏按钮
+        self.ui.btn_undo.setProperty('form', 'btn_undo')  # 撤销重做按钮
+        self.ui.btn_redo.setProperty('form', 'btn_redo')
+        self.ui.btn_zoomin.setProperty('form', 'btn_zoomin')  # 图片操作按钮
+        self.ui.btn_zoomout.setProperty('form', 'btn_zoomout')
+        self.ui.btn_fit_display.setProperty('form', 'btn_fit_display')
+        self.ui.btn_rotate.setProperty('form', 'btn_rotate')
+        self.ui.btn_contrast.setProperty('form', 'btn_contrast')
         self.ui.btn_brightness_cancel.setProperty('form', 'btn_light')  # 基础页面
         self.ui.btn_contrast_ratio_ok.setProperty('form', 'btn_dark')
         self.ui.btn_contrast_ratio_cancel.setProperty('form', 'btn_light')
@@ -105,6 +114,7 @@ class Widget(QWidget):
         self.ui.widget_center.move(0, 10e4)
         self.ui.widget_tool.hide()
         self.ui.widget_menu.setDisabled(True)
+        self.ui.btn_save.setDisabled(True)
         self.__contrastViewer.hide()
         self.ui.btn_undo.setDisabled(True)
         self.ui.btn_redo.setDisabled(True)
@@ -120,6 +130,9 @@ class Widget(QWidget):
 
         # 打开图片按钮槽函数
         self.__openImgBtn.clicked.connect(self.__openImgBtnSlot)
+
+        # 保存按钮槽函数
+        self.ui.btn_save.clicked.connect(self.__saveBtnSlot)
 
         # 撤销按钮槽函数
         self.ui.btn_undo.clicked.connect(self.undoBtnSlot)
@@ -313,15 +326,16 @@ class Widget(QWidget):
             openDir = self.__settings.value('openDir')
 
         # 打开文件选择对话框
-        # path, _ = QFileDialog.getOpenFileName(self, '选择图片', openDir, '图片 (*.jpg *.png)')
-        # if path == '':
-        #     return
+        path, _ = QFileDialog.getOpenFileName(self, '选择图片', openDir, '图片 (*.jpg *.png *.bmp *.jpe *.jpeg *.webp *.tif *.tiff)')
+        if path == '':
+            return
 
         # 临时
-        path = 'C:/Users/wugua/Desktop/demo.png'
+        # path = 'C:/Users/wugua/Desktop/demo.png'
 
-        # 路径保存至QSetting
-        self.__settings.setValue('openDir', path)
+        # 路径保存至QSetting 文件名保存至__imgFileName
+        self.__settings.setValue('openDir', path[:str.rindex(path, '/')])
+        self.__imgFileName = path[str.rindex(path, '/') + 1:]
 
         # 读取图片并添加到图片列表
         self.__imgList.append(cv.imdecode(np.fromfile(path, dtype=np.uint8), 1))
@@ -332,6 +346,22 @@ class Widget(QWidget):
 
         # 弹出中心窗体
         self.__popCenterWidget()
+
+    # 保存按钮槽函数
+    def __saveBtnSlot(self):
+        # 获取保存路径
+        openDir = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
+        if self.__settings.contains('openDir'):
+            openDir = self.__settings.value('openDir') + '/' + self.__imgFileName
+        path, _ = QFileDialog.getSaveFileName(self, '保存', openDir, '图片 (*.jpg *.png *.bmp *.jpe *.jpeg *.webp *.tif *.tiff)')
+        if path == '':
+            return
+
+        # 将本次打开目录存入settings
+        self.__settings.setValue('openDir', path[:str.rindex(path, '/')])
+
+        # 保存图片
+        cv.imwrite(path, self.__imgList[-1])
 
     # 撤销按钮槽函数
     def undoBtnSlot(self):
@@ -399,7 +429,7 @@ class Widget(QWidget):
 
     # 对比度调节确定按钮槽函数
     def __contrastRatioAdjustOkBtnSlot(self):
-        if not self.ui.hs_contrast_ratio == 45:
+        if not self.ui.hs_contrast_ratio.value() == 45:
             self.__appendImg(self.__previewImgDict['contrastRatioAdjust'])
 
             # 恢复参数控件的值
@@ -521,7 +551,7 @@ class Widget(QWidget):
 
     # 自适应阈值分割确定按钮槽函数
     def __adaptiveThresholdOkBtnSlot(self):
-        if not self.ui.hs_adaptive_threshold_radius == 0:
+        if not self.ui.hs_adaptive_threshold_radius.value() == 0:
             self.__appendImg(self.__previewImgDict['adaptiveThreshold'])
 
             # 恢复参数控件的值
@@ -599,6 +629,7 @@ class Widget(QWidget):
         animation.finished.connect(lambda: self.shadow.setEnabled(True))  # 动画结束后启用阴影
         animation.start()
         self.ui.widget_menu.setEnabled(True)
+        self.ui.btn_save.setEnabled(True)
 
     # 往图片列表中追加图片
     def __appendImg(self, img):
