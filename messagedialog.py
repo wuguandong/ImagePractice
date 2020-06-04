@@ -14,7 +14,7 @@ class MessageDialog(QDialog):
         self.setModal(False)  # 非模态
 
         # 背景颜色
-        self.setStyleSheet('background:rgba(255,0,0,0.7);'
+        self.setStyleSheet('background:rgb(233,9,16);'
                            'border-radius: 5px;'
                            'font-size: 11pt;'
                            '')

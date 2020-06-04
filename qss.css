@@ -159,6 +159,14 @@ QSpinBox::up-button, QSpinBox::down-button{
 	width: 0px;
 }
 
+/*小标题*/
+QLabel[form="lbl_title_small"]{
+	color: rgb(100, 100, 100);
+	font-weight:bold;
+	background: rgb(220, 220, 220);
+	border-radius: 5px;
+}
+
 /*滑块*/
 QSlider::handle:horizontal{
 	background: rgb(201, 201, 201);

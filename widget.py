@@ -8,6 +8,7 @@ from messagedialog import MessageDialog
 from util import *
 from enhancement import *
 from smoothing import *
+from segmentation import *
 
 
 class Widget(QWidget):
@@ -28,9 +29,12 @@ class Widget(QWidget):
         self.__previewImgDict = {  # 预览图片字典
             'brightnessAdjust': np.ndarray([0]),
             'contrastRatioAdjust': np.ndarray([0]),
-            'smoothing': np.ndarray([0])
+            'smoothing': np.ndarray([0]),
+            'fixedThreshold': np.ndarray([0]),
+            'adaptiveThreshold': np.ndarray([0])
         }
         self.__mousePressPos = QPoint()  # 鼠标按下位置
+        self.__fixedThresholdActiveFlag = False  # 固定阈值分割激活标志
 
         # 程序名称和图标
         self.setWindowTitle("图像实践")
@@ -76,6 +80,15 @@ class Widget(QWidget):
         self.ui.btn_show_histogram.setProperty('form', 'btn_light_big')
         self.ui.btn_smoothing_cancel.setProperty('form', 'btn_light')  # 平滑页面
         self.ui.btn_smoothing_ok.setProperty('form', 'btn_dark')
+        self.ui.lbl_fixed_threshold_title.setProperty('form', 'lbl_title_small')  # 分割页面
+        self.ui.btn_fixed_threshold_cancel.setProperty('form', 'btn_light')
+        self.ui.btn_fixed_threshold_ok.setProperty('form', 'btn_dark')
+        self.ui.lbl_adaptive_threshold_title.setProperty('form', 'lbl_title_small')
+        self.ui.btn_adaptive_threshold_cancel.setProperty('form', 'btn_light')
+        self.ui.btn_adaptive_threshold_ok.setProperty('form', 'btn_dark')
+        self.ui.lbl_otsu_threshold_title.setProperty('form', 'lbl_title_small')
+        self.ui.btn_otsu_threshold.setProperty('form', 'btn_dark_big')
+
 
         # 菜单按钮组
         self.__menuBtnGroup.setExclusive(False)
@@ -152,6 +165,23 @@ class Widget(QWidget):
         self.ui.radio_smoothing_type_median.clicked.connect(self.__smoothingPreviewSlot)
         self.ui.btn_smoothing_ok.clicked.connect(self.__smoothingOkBtnSlot)
         self.ui.btn_smoothing_cancel.clicked.connect(self.__smoothingCancelBtnSlot)
+
+        # 固定阈值分割槽函数
+        bindSpinboxAndSlider(self.ui.sb_fixed_threshold, self.ui.hs_fixed_threshold, self.__fixedThresholdPreviewSlot)
+        self.ui.btn_fixed_threshold_ok.clicked.connect(self.__fixedThresholdOkBtnSlot)
+        self.ui.btn_fixed_threshold_cancel.clicked.connect(self.__fixedThresholdCancelBtnSlot)
+
+        # 自适应阈值分割槽函数
+        bindSpinboxAndSlider(self.ui.sb_adaptive_threshold_radius, self.ui.hs_adaptive_threshold_radius, self.__adaptiveThresholdPreviewSlot)
+        bindSpinboxAndSlider(self.ui.sb_adaptive_threshold_offset, self.ui.hs_adaptive_threshold_offset, self.__adaptiveThresholdPreviewSlot)
+        self.ui.radio_adaptive_threshold_type_average.clicked.connect(self.__adaptiveThresholdPreviewSlot)
+        self.ui.radio_adaptive_threshold_type_gaussian.clicked.connect(self.__adaptiveThresholdPreviewSlot)
+        self.ui.btn_adaptive_threshold_ok.clicked.connect(self.__adaptiveThresholdOkBtnSlot)
+        self.ui.btn_adaptive_threshold_cancel.clicked.connect(self.__adaptiveThresholdCancelBtnSlot)
+
+        # OTSU阈值分割槽函数
+        self.ui.btn_otsu_threshold.clicked.connect(self.__otsuThresholdBtnSlot)
+
 
     # 重写绘图函数
     def paintEvent(self, event):
@@ -244,6 +274,10 @@ class Widget(QWidget):
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_basic)
             elif menu == 'btn_menu_smoothing':
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_smoothing)
+            elif menu == 'btn_menu_segmentation':
+                self.ui.widget_tool.setCurrentWidget(self.ui.page_segmentation)
+            elif menu == 'btn_menu_morphology':
+                self.ui.widget_tool.setCurrentWidget(self.ui.page_morphology)
             if self.__checkedMenuBtn is None:
                 self.ui.widget_tool.show()
             else:
@@ -412,6 +446,89 @@ class Widget(QWidget):
 
         # 恢复参数控件的值（预览图片会刷新显示）
         self.ui.hs_smoothing_radius.setValue(0)
+
+    # 固定阈值分割预览函数
+    def __fixedThresholdPreviewSlot(self, threshold):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先转换为灰度图像')
+            self.ui.hs_fixed_threshold.setValue(127)
+            return
+
+        self.__previewImgDict['fixedThreshold'] = fixedThresholdSegmentation(self.__imgList[-1], threshold)
+        self.__viewer.changeImage(self.__previewImgDict['fixedThreshold'])
+        self.__fixedThresholdActiveFlag = True  # 置为激活状态
+
+    # 固定阈值分割确定按钮槽函数
+    def __fixedThresholdOkBtnSlot(self):
+        if self.__fixedThresholdActiveFlag:
+            self.__appendImg(self.__previewImgDict['fixedThreshold'])
+
+            # 恢复参数控件的值
+            self.ui.hs_fixed_threshold.setValue(127)
+
+            # 置为非激活状态
+            self.__fixedThresholdActiveFlag = False
+
+    # 固定阈值分割取消按钮槽函数
+    def __fixedThresholdCancelBtnSlot(self):
+        # 重置预览图片
+        self.__previewImgDict['fixedThreshold'] = self.__imgList[-1]
+
+        # 恢复参数控件的值（预览图片会刷新显示）
+        self.ui.hs_fixed_threshold.setValue(127)
+
+        # 置为非激活状态
+        self.__fixedThresholdActiveFlag = False
+
+    # 自适应阈值分割预览函数
+    def __adaptiveThresholdPreviewSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先转换为灰度图像')
+            self.ui.hs_adaptive_threshold_radius.setValue(1)
+            self.ui.hs_adaptive_threshold_offset.setValue(0)
+            return
+
+        if self.ui.radio_adaptive_threshold_type_average.isChecked():
+            method = 'mean'
+        else:
+            method = 'gaussian'
+        radius = self.ui.hs_adaptive_threshold_radius.value()
+        offset = self.ui.hs_adaptive_threshold_offset.value()
+
+        if radius == 0:
+            self.__previewImgDict['adaptiveThreshold'] = self.__imgList[-1]
+        else:
+            self.__previewImgDict['adaptiveThreshold'] = adaptiveThresholdSegmentation(self.__imgList[-1], method, radius, offset)
+        self.__viewer.changeImage(self.__previewImgDict['adaptiveThreshold'])
+
+    # 自适应阈值分割确定按钮槽函数
+    def __adaptiveThresholdOkBtnSlot(self):
+        if not self.ui.hs_adaptive_threshold_radius == 0:
+            self.__appendImg(self.__previewImgDict['adaptiveThreshold'])
+
+            # 恢复参数控件的值
+            self.ui.hs_adaptive_threshold_radius.setValue(0)
+            self.ui.hs_adaptive_threshold_offset.setValue(0)
+
+    # 自适应阈值分割取消按钮槽函数
+    def __adaptiveThresholdCancelBtnSlot(self):
+        # 重置预览图片
+        self.__previewImgDict['adaptiveThreshold'] = self.__imgList[-1]
+
+        # 恢复参数控件的值（预览图片会刷新显示）
+        self.ui.hs_adaptive_threshold_radius.setValue(0)
+        self.ui.hs_adaptive_threshold_offset.setValue(0)
+
+    # OTSU阈值分割槽函数
+    def __otsuThresholdBtnSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先转换为灰度图像')
+            return
+
+        self.__appendImg(otsuThresholdSegmentation(self.__imgList[-1]))
 
     # 弹出中心窗体
     def __popCenterWidget(self):
