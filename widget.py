@@ -11,6 +11,8 @@ from smoothing import *
 from segmentation import *
 from morphology import *
 
+from PyQt5.QtGui import QKeyEvent
+
 
 class Widget(QWidget):
     def __init__(self, parent=None):
@@ -109,6 +111,11 @@ class Widget(QWidget):
             self.__menuBtnGroup.addButton(btn)
             btn.clicked.connect(self.__menuBtnSlot)
 
+        # 设置鼠标悬停提示
+        self.ui.btn_save.setToolTip('Ctrl+S')
+        self.ui.btn_undo.setToolTip('Ctrl+Z')
+        self.ui.btn_redo.setToolTip('Ctrl+R')
+
         # 初始化窗口状态
         self.__openImgBtn.lower()
         self.ui.widget_center.move(0, 10e4)
@@ -135,10 +142,10 @@ class Widget(QWidget):
         self.ui.btn_save.clicked.connect(self.__saveBtnSlot)
 
         # 撤销按钮槽函数
-        self.ui.btn_undo.clicked.connect(self.undoBtnSlot)
+        self.ui.btn_undo.clicked.connect(self.__undoBtnSlot)
 
         # 重做按钮槽函数
-        self.ui.btn_redo.clicked.connect(self.redoBtnSlot)
+        self.ui.btn_redo.clicked.connect(self.__redoBtnSlot)
 
         # 缩小按钮槽函数
         self.ui.btn_zoomout.clicked.connect(lambda: self.__viewer.animatedZoom(self.__viewer.propScale / 2))
@@ -269,6 +276,16 @@ class Widget(QWidget):
         if event.buttons() == Qt.LeftButton:
             self.move(self.pos() + event.pos() - self.__mousePressPos)
 
+    # 重写键盘按下事件
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.modifiers() == Qt.ControlModifier:
+            if event.key() == Qt.Key_S and not self.__openImgBtn.isEnabled():
+                self.__saveBtnSlot()
+            if event.key() == Qt.Key_Z and self.ui.btn_undo.isEnabled():
+                self.__undoBtnSlot()
+            if event.key() == Qt.Key_R and self.ui.btn_redo.isEnabled():
+                self.__redoBtnSlot()
+
     # 最小化按钮槽函数
     def __minBtnSlot(self):
         self.showMinimized()
@@ -326,12 +343,12 @@ class Widget(QWidget):
             openDir = self.__settings.value('openDir')
 
         # 打开文件选择对话框
-        path, _ = QFileDialog.getOpenFileName(self, '选择图片', openDir, '图片 (*.jpg *.png *.bmp *.jpe *.jpeg *.webp *.tif *.tiff)')
-        if path == '':
-            return
+        # path, _ = QFileDialog.getOpenFileName(self, '选择图片', openDir, '图片 (*.jpg *.png *.bmp *.jpe *.jpeg *.webp *.tif *.tiff)')
+        # if path == '':
+        #     return
 
         # 临时
-        # path = 'C:/Users/wugua/Desktop/demo.png'
+        path = 'C:/Users/wugua/Desktop/demo.png'
 
         # 路径保存至QSetting 文件名保存至__imgFileName
         self.__settings.setValue('openDir', path[:str.rindex(path, '/')])
@@ -364,7 +381,7 @@ class Widget(QWidget):
         cv.imwrite(path, self.__imgList[-1])
 
     # 撤销按钮槽函数
-    def undoBtnSlot(self):
+    def __undoBtnSlot(self):
         self.__redoList.append(self.__imgList.pop())
         self.__viewer.changeImage(self.__imgList[-1])
 
@@ -374,7 +391,7 @@ class Widget(QWidget):
         self.ui.btn_redo.setEnabled(True)
 
     # 重做按钮槽函数
-    def redoBtnSlot(self):
+    def __redoBtnSlot(self):
         self.__imgList.append(self.__redoList.pop())
         self.__viewer.changeImage(self.__imgList[-1])
 
