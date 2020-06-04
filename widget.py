@@ -4,6 +4,9 @@ from PyQt5.Qt import *
 from ui_widget import Ui_Widget
 from imageviewer import ImageViewer
 import resource
+from messagedialog import MessageDialog
+from util import *
+from enhancement import *
 
 
 class Widget(QWidget):
@@ -20,6 +23,11 @@ class Widget(QWidget):
         self.__contrastViewer = ImageViewer()  # 原图查看器
         self.__settings = QSettings()
         self.__imgList = []  # 图片列表
+        self.__redoList = []  # 重做列表
+        self.__previewImgDict = {  # 预览图片字典
+            'brightnessAdjust': np.ndarray([0]),
+            'contrastRatioAdjust': np.ndarray([0])
+        }
         self.__mousePressPos = QPoint()  # 鼠标按下位置
 
         # 程序名称和图标
@@ -52,9 +60,18 @@ class Widget(QWidget):
         # 设置控件样式
         self.ui.widget_center.setProperty('form', 'widget_center')
         self.ui.widget_tool.setProperty('form', 'widget_tool')
-        self.ui.btn_min.setProperty('form', 'btn_min')
+        self.ui.btn_min.setProperty('form', 'btn_min')  # 窗口操作按钮
         self.ui.btn_max.setProperty('form', 'btn_max')
         self.ui.btn_close.setProperty('form', 'btn_close')
+        self.__openImgBtn.setProperty('form', 'btn_open_img')  # 打开图片按钮
+        self.__openImgBtn.setFixedSize(350, 50)
+        self.ui.btn_brightness_ok.setProperty('form', 'btn_dark')  # 工具栏按钮
+        self.ui.btn_brightness_cancel.setProperty('form', 'btn_light')
+        self.ui.btn_contrast_ratio_ok.setProperty('form', 'btn_dark')
+        self.ui.btn_contrast_ratio_cancel.setProperty('form', 'btn_light')
+        self.ui.btn_to_gray_image.setProperty('form', 'btn_dark_big')
+        self.ui.btn_histogram_equalization.setProperty('form', 'btn_dark_big')
+        self.ui.btn_show_histogram.setProperty('form', 'btn_light_big')
 
         # 菜单按钮组
         self.__menuBtnGroup.setExclusive(False)
@@ -69,6 +86,8 @@ class Widget(QWidget):
         self.ui.widget_tool.hide()
         self.ui.widget_menu.setDisabled(True)
         self.__contrastViewer.hide()
+        self.ui.btn_undo.setDisabled(True)
+        self.ui.btn_redo.setDisabled(True)
 
         # 最小化按钮槽函数
         self.ui.btn_min.clicked.connect(self.__minBtnSlot)
@@ -81,6 +100,12 @@ class Widget(QWidget):
 
         # 打开图片按钮槽函数
         self.__openImgBtn.clicked.connect(self.__openImgBtnSlot)
+
+        # 撤销按钮槽函数
+        self.ui.btn_undo.clicked.connect(self.undoBtnSlot)
+
+        # 重做按钮槽函数
+        self.ui.btn_redo.clicked.connect(self.redoBtnSlot)
 
         # 缩小按钮槽函数
         self.ui.btn_zoomout.clicked.connect(lambda: self.__viewer.animatedZoom(self.__viewer.propScale / 2))
@@ -96,6 +121,25 @@ class Widget(QWidget):
 
         # 对比按钮槽函数
         self.ui.btn_contrast.clicked.connect(self.__contrastBtnSlot)
+
+        # 亮度调节槽函数
+        bindSpinboxAndSlider(self.ui.sb_brightness, self.ui.hs_brightness, self.__brightnessAdjustPreviewSlot)
+        self.ui.btn_brightness_ok.clicked.connect(self.__brightnessAdjustOkBtnSlot)
+        self.ui.btn_brightness_cancel.clicked.connect(self.__brightnessAdjustCancelBtnSlot)
+
+        # 对比度调节槽函数
+        bindSpinboxAndSlider(self.ui.sb_contrast_ratio, self.ui.hs_contrast_ratio, self.__contrastRatioAdjustPreviewSlot)
+        self.ui.btn_contrast_ratio_ok.clicked.connect(self.__contrastRatioAdjustOkBtnSlot)
+        self.ui.btn_contrast_ratio_cancel.clicked.connect(self.__contrastRatioAdjustCancelBtnSlot)
+
+        # 灰度化按钮槽函数
+        self.ui.btn_to_gray_image.clicked.connect(self.__toGrayImageBtnSlot)
+
+        # 直方图均衡化槽函数
+        self.ui.btn_histogram_equalization.clicked.connect(self.__histogramEqualizationBtnSlot)
+
+        # 显示直方图按钮槽函数
+        self.ui.btn_show_histogram.clicked.connect(self.__showHistogramBtnSlot)
 
     # 重写绘图函数
     def paintEvent(self, event):
@@ -184,8 +228,8 @@ class Widget(QWidget):
             self.ui.widget_tool.hide()
             self.__checkedMenuBtn = None
         else:
-            if menu == 'btn_menu_enhancement':
-                self.ui.widget_tool.setCurrentWidget(self.ui.page_enhancement)
+            if menu == 'btn_menu_basic':
+                self.ui.widget_tool.setCurrentWidget(self.ui.page_basic)
             elif menu == 'btn_menu_smoothing':
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_smoothing)
             if self.__checkedMenuBtn is None:
@@ -196,6 +240,9 @@ class Widget(QWidget):
 
     # 打开图片按钮槽函数
     def __openImgBtnSlot(self):
+        # 防止多次点击
+        self.__openImgBtn.setDisabled(True)
+
         # 获取桌面路径
         openDir = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
 
@@ -204,9 +251,12 @@ class Widget(QWidget):
             openDir = self.__settings.value('openDir')
 
         # 打开文件选择对话框
-        path, _ = QFileDialog.getOpenFileName(self, '选择图片', openDir, '图片 (*.jpg *.png)')
-        if path == '':
-            return
+        # path, _ = QFileDialog.getOpenFileName(self, '选择图片', openDir, '图片 (*.jpg *.png)')
+        # if path == '':
+        #     return
+
+        # 临时
+        path = 'C:/Users/wugua/Desktop/demo.png'
 
         # 路径保存至QSetting
         self.__settings.setValue('openDir', path)
@@ -220,6 +270,26 @@ class Widget(QWidget):
 
         # 弹出中心窗体
         self.__popCenterWidget()
+
+    # 撤销按钮槽函数
+    def undoBtnSlot(self):
+        self.__redoList.append(self.__imgList.pop())
+        self.__viewer.changeImage(self.__imgList[-1])
+
+        if len(self.__imgList) == 1:
+            self.ui.btn_undo.setDisabled(True)
+
+        self.ui.btn_redo.setEnabled(True)
+
+    # 重做按钮槽函数
+    def redoBtnSlot(self):
+        self.__imgList.append(self.__redoList.pop())
+        self.__viewer.changeImage(self.__imgList[-1])
+
+        if len(self.__redoList) == 0:
+            self.ui.btn_redo.setDisabled(True)
+
+        self.ui.btn_undo.setEnabled(True)
 
     # 适应显示按钮槽函数
     def __fitDisplayBtnSlot(self):
@@ -238,9 +308,70 @@ class Widget(QWidget):
         else:
             self.__contrastViewer.hide()
 
-        # 适应窗口显示
-        self.__viewer.fitDisplay()
-        self.__contrastViewer.fitDisplay()
+    # 亮度调节预览槽函数
+    def __brightnessAdjustPreviewSlot(self, value):
+        self.__previewImgDict['brightnessAdjust'] = adjustBrightness(self.__imgList[-1], value)
+        self.__viewer.changeImage(self.__previewImgDict['brightnessAdjust'])
+
+    # 亮度调节确定按钮槽函数
+    # 说明："确定"按钮的作用是将该功能的预览图片追加到图片列表中, 如果该功能当前的参数控件为默认值则不追加
+    def __brightnessAdjustOkBtnSlot(self):
+        if not self.ui.hs_brightness.value() == 0:
+            self.__appendImg(self.__previewImgDict['brightnessAdjust'])
+
+            # 恢复参数控件的值
+            self.ui.hs_brightness.setValue(0)
+
+    # 亮度调节取消按钮槽函数
+    def __brightnessAdjustCancelBtnSlot(self):
+        # 重置预览图片
+        self.__previewImgDict['brightnessAdjust'] = self.__imgList[-1]
+
+        # 恢复参数控件的值（预览图片会刷新显示）
+        self.ui.hs_brightness.setValue(0)
+
+    # 对比度调节预览槽函数
+    def __contrastRatioAdjustPreviewSlot(self, value):
+        self.__previewImgDict['contrastRatioAdjust'] = adjustContrastRatio(self.__imgList[-1], np.tan(value * np.pi / 180))  # value为映射函数倾斜角
+        self.__viewer.changeImage(self.__previewImgDict['contrastRatioAdjust'])
+
+    # 对比度调节确定按钮槽函数
+    def __contrastRatioAdjustOkBtnSlot(self):
+        if not self.ui.hs_contrast_ratio == 45:
+            self.__appendImg(self.__previewImgDict['contrastRatioAdjust'])
+
+            # 恢复参数控件的值
+            self.ui.hs_contrast_ratio.setValue(45)
+
+    # 对比度调节取消按钮槽函数
+    def __contrastRatioAdjustCancelBtnSlot(self):
+        # 重置预览图片
+        self.__previewImgDict['contrastRatioAdjust'] = self.__imgList[-1]
+
+        # 恢复参数控件的值（预览图片会刷新显示）
+        self.ui.hs_contrast_ratio.setValue(45)
+
+    # 灰度化按钮槽函数
+    def __toGrayImageBtnSlot(self):
+        # 如果已经是灰度图 则直接返回
+        if self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '当前已经是灰度图像')
+            return
+
+        self.__appendImg(cv.cvtColor(self.__imgList[-1], cv.COLOR_BGR2GRAY))
+
+    # 直方图均衡化槽函数
+    def __histogramEqualizationBtnSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先转换为灰度图像')
+            return
+
+        self.__appendImg(histogramEqualization(self.__imgList[-1]))
+
+    # 显示直方图按钮槽函数
+    def __showHistogramBtnSlot(self):
+        print('TODO')
 
     # 弹出中心窗体
     def __popCenterWidget(self):
@@ -252,3 +383,17 @@ class Widget(QWidget):
         animation.finished.connect(lambda: self.shadow.setEnabled(True))  # 动画结束后启用阴影
         animation.start()
         self.ui.widget_menu.setEnabled(True)
+
+    # 往图片列表中追加图片
+    def __appendImg(self, img):
+        # 追加图片 并刷新显示
+        self.__imgList.append(img)
+        self.__viewer.changeImage(self.__imgList[-1])
+
+        # 启用撤销按钮
+        self.ui.btn_undo.setEnabled(True)
+
+        # 清空重做列表 并禁用重做按钮
+        self.__redoList.clear()
+        self.ui.btn_redo.setDisabled(True)
+

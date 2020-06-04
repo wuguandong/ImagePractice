@@ -24,8 +24,8 @@ class ImageViewer(QWidget):
         self.__zoomCenterOnCursor = False  # 是否以鼠标为中心缩放
 
         # 临时
-        # self.setPalette(QPalette(QColor(255, 255, 0, 20)))
-        # self.setAutoFillBackground(True)
+        self.setPalette(QPalette(QColor(255, 255, 0, 50)))
+        self.setAutoFillBackground(True)
 
     # 重写绘图事件
     def paintEvent(self, event):
@@ -43,10 +43,15 @@ class ImageViewer(QWidget):
 
     # 重写窗口大小改变事件
     def resizeEvent(self, event):
+        # 如果处于隐藏状态 则直接返回
+        if self.isHidden():
+            return
+
         # 如果resize前能完整显示 则resize后重新适应窗口显示
-        oldSize = event.oldSize()
-        if oldSize.width() >= self.img.width() * ImageViewer.__scale and oldSize.height() >= self.img.height() * ImageViewer.__scale:
-            self.fitDisplay()
+        # oldSize = event.oldSize()
+        # if oldSize.width() >= self.img.width() * ImageViewer.__scale and oldSize.height() >= self.img.height() * ImageViewer.__scale:
+        #     self.fitDisplay()
+        self.fitDisplay()  # 只要resize就重新适应窗口显示
 
     # 重写鼠标按下事件
     def mousePressEvent(self, event):
@@ -90,10 +95,27 @@ class ImageViewer(QWidget):
         else:  # 向下滚动 即缩小
             self.setProperty('propScale', ImageViewer.__scale / 1.1)
 
+    # 加载图片
     def loadImage(self, npImg: np.ndarray):
         npImg = cv.cvtColor(npImg, cv.COLOR_BGR2RGB)
         self.img = QImage(npImg, npImg.shape[1], npImg.shape[0], npImg.shape[1] * 3, QImage.Format_RGB888)
         self.fitDisplay()  # 适应窗口显示
+
+    # 更换图片
+    def changeImage(self, npImg: np.ndarray):
+        if npImg.ndim == 3:
+            npImg = cv.cvtColor(npImg, cv.COLOR_BGR2RGB)
+            self.img = QImage(npImg, npImg.shape[1], npImg.shape[0], npImg.shape[1] * 3, QImage.Format_RGB888)
+        else:
+            self.img = QImage(npImg, npImg.shape[1], npImg.shape[0], npImg.shape[1], QImage.Format_Grayscale8)
+
+        # 根据__rotateAngle旋转图片
+        if not self.__rotateAngle == 0:
+            tf = QTransform()
+            tf.rotate(self.__rotateAngle)
+            self.img = self.img.transformed(tf)
+
+        self.update()
 
     # 适应窗口显示
     def fitDisplay(self):
@@ -129,6 +151,10 @@ class ImageViewer(QWidget):
         tf = QTransform()
         tf.rotate(-90)
         self.img = self.img.transformed(tf)
+
+        # 将当前旋转角度保存到__rotateAngle
+        self.__rotateAngle -= 90
+        self.__rotateAngle %= 360
 
         # 适应窗口显示
         self.fitDisplay()
