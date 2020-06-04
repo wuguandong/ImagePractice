@@ -7,6 +7,7 @@ import resource
 from messagedialog import MessageDialog
 from util import *
 from enhancement import *
+from smoothing import *
 
 
 class Widget(QWidget):
@@ -26,7 +27,8 @@ class Widget(QWidget):
         self.__redoList = []  # 重做列表
         self.__previewImgDict = {  # 预览图片字典
             'brightnessAdjust': np.ndarray([0]),
-            'contrastRatioAdjust': np.ndarray([0])
+            'contrastRatioAdjust': np.ndarray([0]),
+            'smoothing': np.ndarray([0])
         }
         self.__mousePressPos = QPoint()  # 鼠标按下位置
 
@@ -66,12 +68,14 @@ class Widget(QWidget):
         self.__openImgBtn.setProperty('form', 'btn_open_img')  # 打开图片按钮
         self.__openImgBtn.setFixedSize(350, 50)
         self.ui.btn_brightness_ok.setProperty('form', 'btn_dark')  # 工具栏按钮
-        self.ui.btn_brightness_cancel.setProperty('form', 'btn_light')
+        self.ui.btn_brightness_cancel.setProperty('form', 'btn_light')  # 基础页面
         self.ui.btn_contrast_ratio_ok.setProperty('form', 'btn_dark')
         self.ui.btn_contrast_ratio_cancel.setProperty('form', 'btn_light')
         self.ui.btn_to_gray_image.setProperty('form', 'btn_dark_big')
         self.ui.btn_histogram_equalization.setProperty('form', 'btn_dark_big')
         self.ui.btn_show_histogram.setProperty('form', 'btn_light_big')
+        self.ui.btn_smoothing_cancel.setProperty('form', 'btn_light')  # 平滑页面
+        self.ui.btn_smoothing_ok.setProperty('form', 'btn_dark')
 
         # 菜单按钮组
         self.__menuBtnGroup.setExclusive(False)
@@ -140,6 +144,14 @@ class Widget(QWidget):
 
         # 显示直方图按钮槽函数
         self.ui.btn_show_histogram.clicked.connect(self.__showHistogramBtnSlot)
+
+        # 平滑操作槽函数
+        bindSpinboxAndSlider(self.ui.sb_smoothing_radius, self.ui.hs_smoothing_radius, self.__smoothingPreviewSlot)
+        self.ui.radio_smoothing_type_average.clicked.connect(self.__smoothingPreviewSlot)
+        self.ui.radio_smoothing_type_gaussian.clicked.connect(self.__smoothingPreviewSlot)
+        self.ui.radio_smoothing_type_median.clicked.connect(self.__smoothingPreviewSlot)
+        self.ui.btn_smoothing_ok.clicked.connect(self.__smoothingOkBtnSlot)
+        self.ui.btn_smoothing_cancel.clicked.connect(self.__smoothingCancelBtnSlot)
 
     # 重写绘图函数
     def paintEvent(self, event):
@@ -372,6 +384,34 @@ class Widget(QWidget):
     # 显示直方图按钮槽函数
     def __showHistogramBtnSlot(self):
         print('TODO')
+
+    # 平滑预览槽函数
+    def __smoothingPreviewSlot(self):
+        radius = self.ui.hs_smoothing_radius.value()
+        if self.ui.radio_smoothing_type_average.isChecked():
+            self.__previewImgDict['smoothing'] = averageSmoothing(self.__imgList[-1], radius)
+        elif self.ui.radio_smoothing_type_gaussian.isChecked():
+            self.__previewImgDict['smoothing'] = gaussianSmoothing(self.__imgList[-1], radius)
+        else:
+            self.__previewImgDict['smoothing'] = medianSmoothing(self.__imgList[-1], radius)
+
+        self.__viewer.changeImage(self.__previewImgDict['smoothing'])
+
+    # 平滑确定按钮槽函数
+    def __smoothingOkBtnSlot(self):
+        if not self.ui.hs_smoothing_radius.value() == 0:
+            self.__appendImg(self.__previewImgDict['smoothing'])
+
+            # 恢复参数控件的值
+            self.ui.hs_smoothing_radius.setValue(0)
+
+    # 平滑取消按钮槽函数
+    def __smoothingCancelBtnSlot(self):
+        # 重置预览图片
+        self.__previewImgDict['smoothing'] = self.__imgList[-1]
+
+        # 恢复参数控件的值（预览图片会刷新显示）
+        self.ui.hs_smoothing_radius.setValue(0)
 
     # 弹出中心窗体
     def __popCenterWidget(self):

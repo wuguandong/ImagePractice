@@ -114,6 +114,18 @@ QPushButton[form="btn_light"]:pressed{
 	border-color: rgb(59, 119, 198);
 }
 
+/*浅色小按钮*/
+/* QPushButton[form="btn_light_small"]{ */
+	/* border: 1px solid rgb(201, 201, 201); */
+	/* border-radius:3px; */
+/* } */
+/* QPushButton[form="btn_light_small"]:hover{ */
+	/* border-color: rgb(59, 119, 198); */
+/* } */
+/* QPushButton[form="btn_light_small"]:pressed{ */
+	/* border-color: rgb(59, 119, 198); */
+/* } */
+
 /*深色大按钮*/
 QPushButton[form="btn_dark_big"]{
 	color: white;
