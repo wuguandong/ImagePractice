@@ -9,6 +9,7 @@ from util import *
 from enhancement import *
 from smoothing import *
 from segmentation import *
+from morphology import *
 
 
 class Widget(QWidget):
@@ -31,7 +32,8 @@ class Widget(QWidget):
             'contrastRatioAdjust': np.ndarray([0]),
             'smoothing': np.ndarray([0]),
             'fixedThreshold': np.ndarray([0]),
-            'adaptiveThreshold': np.ndarray([0])
+            'adaptiveThreshold': np.ndarray([0]),
+            'morphology': np.ndarray([0])
         }
         self.__mousePressPos = QPoint()  # 鼠标按下位置
         self.__fixedThresholdActiveFlag = False  # 固定阈值分割激活标志
@@ -88,7 +90,8 @@ class Widget(QWidget):
         self.ui.btn_adaptive_threshold_ok.setProperty('form', 'btn_dark')
         self.ui.lbl_otsu_threshold_title.setProperty('form', 'lbl_title_small')
         self.ui.btn_otsu_threshold.setProperty('form', 'btn_dark_big')
-
+        self.ui.btn_morphology_cancel.setProperty('form', 'btn_light')
+        self.ui.btn_morphology_ok.setProperty('form', 'btn_dark')
 
         # 菜单按钮组
         self.__menuBtnGroup.setExclusive(False)
@@ -182,6 +185,17 @@ class Widget(QWidget):
         # OTSU阈值分割槽函数
         self.ui.btn_otsu_threshold.clicked.connect(self.__otsuThresholdBtnSlot)
 
+        # 形态学操作槽函数
+        bindSpinboxAndSlider(self.ui.sb_morphology_radius, self.ui.hs_morphology_radius, self.__morphologyPreviewSlot)
+        self.ui.radio_morphology_type_dilate.clicked.connect(self.__morphologyPreviewSlot)
+        self.ui.radio_morphology_type_erode.clicked.connect(self.__morphologyPreviewSlot)
+        self.ui.radio_morphology_type_open.clicked.connect(self.__morphologyPreviewSlot)
+        self.ui.radio_morphology_type_close.clicked.connect(self.__morphologyPreviewSlot)
+        self.ui.radio_morphology_shape_rect.clicked.connect(self.__morphologyPreviewSlot)
+        self.ui.radio_morphology_shape_circle.clicked.connect(self.__morphologyPreviewSlot)
+        self.ui.radio_morphology_type_cross.clicked.connect(self.__morphologyPreviewSlot)
+        self.ui.btn_morphology_ok.clicked.connect(self.__morphologyOkBtnSlot)
+        self.ui.btn_morphology_cancel.clicked.connect(self.__morphologyCancelBtnSlot)
 
     # 重写绘图函数
     def paintEvent(self, event):
@@ -270,6 +284,7 @@ class Widget(QWidget):
             self.ui.widget_tool.hide()
             self.__checkedMenuBtn = None
         else:
+            # 切换page
             if menu == 'btn_menu_basic':
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_basic)
             elif menu == 'btn_menu_smoothing':
@@ -278,6 +293,7 @@ class Widget(QWidget):
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_segmentation)
             elif menu == 'btn_menu_morphology':
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_morphology)
+
             if self.__checkedMenuBtn is None:
                 self.ui.widget_tool.show()
             else:
@@ -529,6 +545,49 @@ class Widget(QWidget):
             return
 
         self.__appendImg(otsuThresholdSegmentation(self.__imgList[-1]))
+
+    # 形态学预览按钮槽函数
+    def __morphologyPreviewSlot(self):
+        # 如果当前不是二值图像 则直接返回
+        if not isBinaryImage(self.__imgList[-1]):
+            MessageDialog(self, '需要先进行二值化')
+            self.ui.hs_morphology_radius.setValue(0)
+            return
+
+        if self.ui.radio_morphology_shape_rect.isChecked():
+            shape = 'rect'
+        elif self.ui.radio_morphology_shape_circle.isChecked():
+            shape = 'circle'
+        else:
+            shape = 'cross'
+        radius = self.ui.hs_morphology_radius.value()
+
+        if self.ui.radio_morphology_type_dilate.isChecked():
+            self.__previewImgDict['morphology'] = dilateOperation(self.__imgList[-1], shape, radius)
+        elif self.ui.radio_morphology_type_erode.isChecked():
+            self.__previewImgDict['morphology'] = erodeOperation(self.__imgList[-1], shape, radius)
+        elif self.ui.radio_morphology_type_open.isChecked():
+            self.__previewImgDict['morphology'] = openOperation(self.__imgList[-1], shape, radius)
+        else:
+            self.__previewImgDict['morphology'] = closeOperation(self.__imgList[-1], shape, radius)
+
+        self.__viewer.changeImage(self.__previewImgDict['morphology'])
+
+    # 形态学确定按钮槽函数
+    def __morphologyOkBtnSlot(self):
+        if not self.ui.hs_morphology_radius.value() == 0:
+            self.__appendImg(self.__previewImgDict['morphology'])
+
+            # 恢复参数控件的值
+            self.ui.hs_morphology_radius.setValue(0)
+
+    # 形态学取消按钮槽函数
+    def __morphologyCancelBtnSlot(self):
+        # 重置预览图片
+        self.__previewImgDict['morphology'] = self.__imgList[-1]
+
+        # 恢复参数控件的值（预览图片会刷新显示）
+        self.ui.hs_morphology_radius.setValue(0)
 
     # 弹出中心窗体
     def __popCenterWidget(self):

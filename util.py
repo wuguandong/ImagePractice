@@ -1,3 +1,4 @@
+import numpy as np
 from PyQt5.Qt import QSpinBox, QSlider
 
 
@@ -9,3 +10,8 @@ def bindSpinboxAndSlider(editor: QSpinBox, slider: QSlider, slot):
 
     # 绑定槽函数
     slider.valueChanged.connect(slot)
+
+
+# 判断是否为二值图像
+def isBinaryImage(img: np.ndarray):
+    return np.all(np.in1d(img, [0, 255]))
