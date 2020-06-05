@@ -10,8 +10,7 @@ from enhancement import *
 from smoothing import *
 from segmentation import *
 from morphology import *
-
-from PyQt5.QtGui import QKeyEvent
+from edge_detection import *
 
 
 class Widget(QWidget):
@@ -36,10 +35,13 @@ class Widget(QWidget):
             'smoothing': np.ndarray([0]),
             'fixedThreshold': np.ndarray([0]),
             'adaptiveThreshold': np.ndarray([0]),
-            'morphology': np.ndarray([0])
+            'morphology': np.ndarray([0]),
+            'cannyEdge': np.ndarray([0])
         }
+        self.__mousePressFlag = False  # 鼠标左键是否被按下
         self.__mousePressPos = QPoint()  # 鼠标按下位置
         self.__fixedThresholdActiveFlag = False  # 固定阈值分割激活标志
+        self.__cannyEdgeActiveFlag = False  # Canny边缘检测激活标志
 
         # 程序名称和图标
         self.setWindowTitle("图像实践")
@@ -103,6 +105,13 @@ class Widget(QWidget):
         self.ui.btn_otsu_threshold.setProperty('form', 'btn_dark_big')
         self.ui.btn_morphology_cancel.setProperty('form', 'btn_light')
         self.ui.btn_morphology_ok.setProperty('form', 'btn_dark')
+        self.ui.lbl_sobel_edge_detection.setProperty('form', 'lbl_title_small')  # 边缘检测页面
+        self.ui.btn_sobel_edge_detection.setProperty('form', 'btn_dark_big')
+        self.ui.lbl_laplacian_edge_detection.setProperty('form', 'lbl_title_small')
+        self.ui.btn_laplacian_edge_detection.setProperty('form', 'btn_dark_big')
+        self.ui.lbl_canny_edge_detection.setProperty('form', 'lbl_title_small')
+        self.ui.btn_canny_edge_detection_cancel.setProperty('form', 'btn_light')
+        self.ui.btn_canny_edge_detection_ok.setProperty('form', 'btn_dark')
 
         # 菜单按钮组
         self.__menuBtnGroup.setExclusive(False)
@@ -217,6 +226,18 @@ class Widget(QWidget):
         self.ui.btn_morphology_ok.clicked.connect(self.__morphologyOkBtnSlot)
         self.ui.btn_morphology_cancel.clicked.connect(self.__morphologyCancelBtnSlot)
 
+        # 索伯边缘检测槽函数
+        self.ui.btn_sobel_edge_detection.clicked.connect(self.__sobelEdgeDetectionBtnSlot)
+
+        # 拉普拉斯边缘检测
+        self.ui.btn_laplacian_edge_detection.clicked.connect(self.__laplacianEdgeDetectionBtnSlot)
+
+        # Canny边缘检测槽函数
+        bindSpinboxAndSlider(self.ui.sb_canny_low_threshold, self.ui.hs_canny_low_threshold, self.__cannyEdgePreviewSlot)
+        bindSpinboxAndSlider(self.ui.sb_canny_high_threshold, self.ui.hs_canny_high_threshold, self.__cannyEdgePreviewSlot)
+        self.ui.btn_canny_edge_detection_ok.clicked.connect(self.__cannyEdgeOkBtnSlot)
+        self.ui.btn_canny_edge_detection_cancel.clicked.connect(self.__cannyEdgeCancelBtnSlot)
+
     # 重写绘图函数
     def paintEvent(self, event):
         # 绘制窗体阴影
@@ -250,12 +271,14 @@ class Widget(QWidget):
 
     # 重写改变窗口大小事件
     def resizeEvent(self, event):
-        # 背景图片大小自适应
+        # 使用背景图片
         # palette = QPalette()
         # bgImg = QPixmap(':/image/background.jpg').scaled(self.ui.widget_bg.width(), self.ui.widget_bg.height())
         # palette.setBrush(self.backgroundRole(), QBrush(bgImg))
         # self.ui.widget_bg.setPalette(palette)
-        self.ui.widget_bg.setPalette(QPalette(QColor(43, 87, 154)))  # 临时用纯色背景
+
+        # 使用纯色背景
+        self.ui.widget_bg.setPalette(QPalette(QColor(43, 87, 154)))
 
         # 计算widget_center_container大小
         ownerSize = QSize(self.ui.widget_bg.width(), self.ui.widget_bg.height() - self.ui.widget_title.minimumHeight())
@@ -268,16 +291,27 @@ class Widget(QWidget):
 
     # 重写鼠标按下事件
     def mousePressEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton:
+            self.__mousePressFlag = True
             self.__mousePressPos = event.pos()
+
+    # 重写鼠标释放事件
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.__mousePressFlag = False
 
     # 重写鼠标移动事件
     def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
+        if self.__mousePressFlag and not self.isMaximized():
             self.move(self.pos() + event.pos() - self.__mousePressPos)
 
+    # 重写鼠标双击事件
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.ui.btn_max.clicked.emit()
+
     # 重写键盘按下事件
-    def keyPressEvent(self, event: QKeyEvent):
+    def keyPressEvent(self, event):
         if event.modifiers() == Qt.ControlModifier:
             if event.key() == Qt.Key_S and not self.__openImgBtn.isEnabled():
                 self.__saveBtnSlot()
@@ -323,6 +357,8 @@ class Widget(QWidget):
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_segmentation)
             elif menu == 'btn_menu_morphology':
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_morphology)
+            elif menu == 'btn_menu_edge_detection':
+                self.ui.widget_tool.setCurrentWidget(self.ui.page_edge_detection)
 
             if self.__checkedMenuBtn is None:
                 self.ui.widget_tool.show()
@@ -348,7 +384,7 @@ class Widget(QWidget):
         #     return
 
         # 临时
-        path = 'C:/Users/wugua/Desktop/demo.png'
+        path = 'C:/Users/wugua/Desktop/demo.jpg'
 
         # 路径保存至QSetting 文件名保存至__imgFileName
         self.__settings.setValue('openDir', path[:str.rindex(path, '/')])
@@ -544,12 +580,15 @@ class Widget(QWidget):
         # 置为非激活状态
         self.__fixedThresholdActiveFlag = False
 
+        # 再次主动刷新显示
+        self.__viewer.changeImage(self.__imgList[-1])
+
     # 自适应阈值分割预览函数
     def __adaptiveThresholdPreviewSlot(self):
         # 如果当前不是灰度图 则直接返回
         if not self.__imgList[-1].ndim == 2:
             MessageDialog(self, '需要先转换为灰度图像')
-            self.ui.hs_adaptive_threshold_radius.setValue(1)
+            self.ui.hs_adaptive_threshold_radius.setValue(0)
             self.ui.hs_adaptive_threshold_offset.setValue(0)
             return
 
@@ -597,7 +636,7 @@ class Widget(QWidget):
     def __morphologyPreviewSlot(self):
         # 如果当前不是二值图像 则直接返回
         if not isBinaryImage(self.__imgList[-1]):
-            MessageDialog(self, '需要先进行二值化')
+            MessageDialog(self, '需要先在「分割」菜单中进行二值化')
             self.ui.hs_morphology_radius.setValue(0)
             return
 
@@ -635,6 +674,86 @@ class Widget(QWidget):
 
         # 恢复参数控件的值（预览图片会刷新显示）
         self.ui.hs_morphology_radius.setValue(0)
+
+    # 索伯边缘检测槽函数
+    def __sobelEdgeDetectionBtnSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先转换为灰度图像')
+            return
+
+        if self.ui.radio_sobel_edge_detection_axis_x.isChecked():
+            axis = 'x'
+        else:
+            axis = 'y'
+        if self.ui.radio_sobel_edge_detection_radius_1.isChecked():
+            radius = 1
+        elif self.ui.radio_sobel_edge_detection_radius_2.isChecked():
+            radius = 2
+        else:
+            radius = 3
+
+        self.__appendImg(sobelEdgeDetection(self.__imgList[-1], axis, radius))
+
+    # 拉普拉斯边缘检测槽函数
+    def __laplacianEdgeDetectionBtnSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先转换为灰度图像')
+            return
+
+        if self.ui.radio_laplacian_edge_detection_type_4.isChecked():
+            neighbourhood = 4
+        else:
+            neighbourhood = 8
+
+        self.__appendImg(laplacianEdgeDetection(self.__imgList[-1], neighbourhood))
+
+    # Canny边缘检测预览按钮槽函数
+    def __cannyEdgePreviewSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先转换为灰度图像')
+            self.ui.hs_canny_low_threshold.setValue(100)
+            self.ui.hs_canny_high_threshold.setValue(200)
+            return
+
+        lowThreshold = self.ui.hs_canny_low_threshold.value()
+        highThreshold = self.ui.hs_canny_high_threshold.value()
+
+        self.__previewImgDict['cannyEdge'] = cannyEdgeDetection(self.__imgList[-1], lowThreshold, highThreshold)
+        self.__viewer.changeImage(self.__previewImgDict['cannyEdge'])
+        self.__cannyEdgeActiveFlag = True  # 置为激活状态
+
+    # Canny边缘检测确定按钮槽函数
+    def __cannyEdgeOkBtnSlot(self):
+        if self.__cannyEdgeActiveFlag:
+            self.__appendImg(self.__previewImgDict['cannyEdge'])
+
+            # 恢复参数控件的值
+            self.ui.hs_canny_low_threshold.setValue(100)
+            self.ui.hs_canny_high_threshold.setValue(200)
+
+            # 置为非激活状态
+            self.__cannyEdgeActiveFlag = False
+
+            # 再次主动刷新显示（因为滑杆恢复导致预览函数再次对图像进行Canny边缘检测）
+            self.__viewer.changeImage(self.__imgList[-1])
+
+    # Canny边缘检测取消按钮槽函数
+    def __cannyEdgeCancelBtnSlot(self):
+        # 重置预览图片
+        self.__previewImgDict['cannyEdge'] = self.__imgList[-1]
+
+        # 恢复参数控件的值（预览图片会刷新显示）
+        self.ui.hs_canny_low_threshold.setValue(100)
+        self.ui.hs_canny_high_threshold.setValue(200)
+
+        # 置为非激活状态
+        self.__cannyEdgeActiveFlag = False
+
+        # 再次主动刷新显示
+        self.__viewer.changeImage(self.__imgList[-1])
 
     # 弹出中心窗体
     def __popCenterWidget(self):
