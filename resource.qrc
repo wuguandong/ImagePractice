@@ -1,7 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>image/app_icon.png</file>
-        <file>image/background.jpg</file>
         <file>image/close.png</file>
         <file>image/doc-mini-max.png</file>
         <file>image/doc-result-max.png</file>

@@ -11,6 +11,7 @@ from smoothing import *
 from segmentation import *
 from morphology import *
 from edge_detection import *
+from featureextraction import *
 
 
 class Widget(QWidget):
@@ -87,12 +88,13 @@ class Widget(QWidget):
         self.ui.btn_fit_display.setProperty('form', 'btn_fit_display')
         self.ui.btn_rotate.setProperty('form', 'btn_rotate')
         self.ui.btn_contrast.setProperty('form', 'btn_contrast')
-        self.ui.btn_brightness_cancel.setProperty('form', 'btn_light')  # 基础页面
+        self.ui.btn_brightness_cancel.setProperty('form', 'btn_light')  # 基本页面
         self.ui.btn_contrast_ratio_ok.setProperty('form', 'btn_dark')
         self.ui.btn_contrast_ratio_cancel.setProperty('form', 'btn_light')
+        self.ui.btn_color_reversal.setProperty('form', 'btn_dark_big')
         self.ui.btn_to_gray_image.setProperty('form', 'btn_dark_big')
         self.ui.btn_histogram_equalization.setProperty('form', 'btn_dark_big')
-        self.ui.btn_show_histogram.setProperty('form', 'btn_light_big')
+        # self.ui.btn_show_histogram.setProperty('form', 'btn_light_big')
         self.ui.btn_smoothing_cancel.setProperty('form', 'btn_light')  # 平滑页面
         self.ui.btn_smoothing_ok.setProperty('form', 'btn_dark')
         self.ui.lbl_fixed_threshold_title.setProperty('form', 'lbl_title_small')  # 分割页面
@@ -112,6 +114,14 @@ class Widget(QWidget):
         self.ui.lbl_canny_edge_detection.setProperty('form', 'lbl_title_small')
         self.ui.btn_canny_edge_detection_cancel.setProperty('form', 'btn_light')
         self.ui.btn_canny_edge_detection_ok.setProperty('form', 'btn_dark')
+        self.ui.lbl_contour_feature_title.setProperty('form', 'lbl_title_small')  # 特征提取页面
+        self.ui.btn_contour_tracing.setProperty('form', 'btn_dark_big')
+        self.ui.lbl_shape_feature_title.setProperty('form', 'lbl_title_small')
+        self.ui.btn_hough_line_transform.setProperty('form', 'btn_dark_big')
+        self.ui.lbl_point_feature_title.setProperty('form', 'lbl_title_small')
+        self.ui.btn_harris_feature.setProperty('form', 'btn_dark_big')
+        self.ui.btn_fast_feature.setProperty('form', 'btn_dark_big')
+        self.ui.btn_orb_feature.setProperty('form', 'btn_dark_big')
 
         # 菜单按钮组
         self.__menuBtnGroup.setExclusive(False)
@@ -181,6 +191,9 @@ class Widget(QWidget):
         self.ui.btn_contrast_ratio_ok.clicked.connect(self.__contrastRatioAdjustOkBtnSlot)
         self.ui.btn_contrast_ratio_cancel.clicked.connect(self.__contrastRatioAdjustCancelBtnSlot)
 
+        # 反相按钮槽函数
+        self.ui.btn_color_reversal.clicked.connect(self.__colorReversalBtnSlot)
+
         # 灰度化按钮槽函数
         self.ui.btn_to_gray_image.clicked.connect(self.__toGrayImageBtnSlot)
 
@@ -188,7 +201,7 @@ class Widget(QWidget):
         self.ui.btn_histogram_equalization.clicked.connect(self.__histogramEqualizationBtnSlot)
 
         # 显示直方图按钮槽函数
-        self.ui.btn_show_histogram.clicked.connect(self.__showHistogramBtnSlot)
+        # self.ui.btn_show_histogram.clicked.connect(self.__showHistogramBtnSlot)
 
         # 平滑操作槽函数
         bindSpinboxAndSlider(self.ui.sb_smoothing_radius, self.ui.hs_smoothing_radius, self.__smoothingPreviewSlot)
@@ -237,6 +250,21 @@ class Widget(QWidget):
         bindSpinboxAndSlider(self.ui.sb_canny_high_threshold, self.ui.hs_canny_high_threshold, self.__cannyEdgePreviewSlot)
         self.ui.btn_canny_edge_detection_ok.clicked.connect(self.__cannyEdgeOkBtnSlot)
         self.ui.btn_canny_edge_detection_cancel.clicked.connect(self.__cannyEdgeCancelBtnSlot)
+
+        # 轮廓跟踪槽函数
+        self.ui.btn_contour_tracing.clicked.connect(self.__contourTracingSlot)
+
+        # 霍夫直线变换槽函数
+        self.ui.btn_hough_line_transform.clicked.connect(self.__houghLineTransformSlot)
+
+        # Harris特征检测槽函数
+        self.ui.btn_harris_feature.clicked.connect(self.__harrisFeatureDetectionSlot)
+
+        # FAST特征检测槽函数
+        self.ui.btn_fast_feature.clicked.connect(self.__fastFeatureDetectionSlot)
+
+        # ORB特征检测槽函数
+        self.ui.btn_orb_feature.clicked.connect(self.__orbFeatureDetectionSlot)
 
     # 重写绘图函数
     def paintEvent(self, event):
@@ -359,6 +387,8 @@ class Widget(QWidget):
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_morphology)
             elif menu == 'btn_menu_edge_detection':
                 self.ui.widget_tool.setCurrentWidget(self.ui.page_edge_detection)
+            elif menu == 'btn_menu_feature_extraction':
+                self.ui.widget_tool.setCurrentWidget(self.ui.page_feature)
 
             if self.__checkedMenuBtn is None:
                 self.ui.widget_tool.show()
@@ -379,12 +409,9 @@ class Widget(QWidget):
             openDir = self.__settings.value('openDir')
 
         # 打开文件选择对话框
-        # path, _ = QFileDialog.getOpenFileName(self, '选择图片', openDir, '图片 (*.jpg *.png *.bmp *.jpe *.jpeg *.webp *.tif *.tiff)')
-        # if path == '':
-        #     return
-
-        # 临时
-        path = 'C:/Users/wugua/Desktop/demo.jpg'
+        path, _ = QFileDialog.getOpenFileName(self, '选择图片', openDir, '图片 (*.jpg *.png *.bmp *.jpe *.jpeg *.webp *.tif *.tiff)')
+        if path == '':
+            return
 
         # 路径保存至QSetting 文件名保存至__imgFileName
         self.__settings.setValue('openDir', path[:str.rindex(path, '/')])
@@ -496,6 +523,10 @@ class Widget(QWidget):
         # 恢复参数控件的值（预览图片会刷新显示）
         self.ui.hs_contrast_ratio.setValue(45)
 
+    # 反相按钮槽函数
+    def __colorReversalBtnSlot(self):
+        self.__appendImg(colorReversal(self.__imgList[-1]))
+
     # 灰度化按钮槽函数
     def __toGrayImageBtnSlot(self):
         # 如果已经是灰度图 则直接返回
@@ -509,14 +540,14 @@ class Widget(QWidget):
     def __histogramEqualizationBtnSlot(self):
         # 如果当前不是灰度图 则直接返回
         if not self.__imgList[-1].ndim == 2:
-            MessageDialog(self, '需要先转换为灰度图像')
+            MessageDialog(self, '需要先进行灰度化')
             return
 
         self.__appendImg(histogramEqualization(self.__imgList[-1]))
 
     # 显示直方图按钮槽函数
-    def __showHistogramBtnSlot(self):
-        print('TODO')
+    # def __showHistogramBtnSlot(self):
+    #     print('待写')
 
     # 平滑预览槽函数
     def __smoothingPreviewSlot(self):
@@ -550,7 +581,7 @@ class Widget(QWidget):
     def __fixedThresholdPreviewSlot(self, threshold):
         # 如果当前不是灰度图 则直接返回
         if not self.__imgList[-1].ndim == 2:
-            MessageDialog(self, '需要先转换为灰度图像')
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
             self.ui.hs_fixed_threshold.setValue(127)
             return
 
@@ -587,7 +618,7 @@ class Widget(QWidget):
     def __adaptiveThresholdPreviewSlot(self):
         # 如果当前不是灰度图 则直接返回
         if not self.__imgList[-1].ndim == 2:
-            MessageDialog(self, '需要先转换为灰度图像')
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
             self.ui.hs_adaptive_threshold_radius.setValue(0)
             self.ui.hs_adaptive_threshold_offset.setValue(0)
             return
@@ -627,7 +658,7 @@ class Widget(QWidget):
     def __otsuThresholdBtnSlot(self):
         # 如果当前不是灰度图 则直接返回
         if not self.__imgList[-1].ndim == 2:
-            MessageDialog(self, '需要先转换为灰度图像')
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
             return
 
         self.__appendImg(otsuThresholdSegmentation(self.__imgList[-1]))
@@ -679,7 +710,7 @@ class Widget(QWidget):
     def __sobelEdgeDetectionBtnSlot(self):
         # 如果当前不是灰度图 则直接返回
         if not self.__imgList[-1].ndim == 2:
-            MessageDialog(self, '需要先转换为灰度图像')
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
             return
 
         if self.ui.radio_sobel_edge_detection_axis_x.isChecked():
@@ -699,7 +730,7 @@ class Widget(QWidget):
     def __laplacianEdgeDetectionBtnSlot(self):
         # 如果当前不是灰度图 则直接返回
         if not self.__imgList[-1].ndim == 2:
-            MessageDialog(self, '需要先转换为灰度图像')
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
             return
 
         if self.ui.radio_laplacian_edge_detection_type_4.isChecked():
@@ -713,7 +744,7 @@ class Widget(QWidget):
     def __cannyEdgePreviewSlot(self):
         # 如果当前不是灰度图 则直接返回
         if not self.__imgList[-1].ndim == 2:
-            MessageDialog(self, '需要先转换为灰度图像')
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
             self.ui.hs_canny_low_threshold.setValue(100)
             self.ui.hs_canny_high_threshold.setValue(200)
             return
@@ -754,6 +785,55 @@ class Widget(QWidget):
 
         # 再次主动刷新显示
         self.__viewer.changeImage(self.__imgList[-1])
+
+    # 轮廓跟踪槽函数
+    def __contourTracingSlot(self):
+        # 如果当前不是二值图像 则直接返回
+        if not isBinaryImage(self.__imgList[-1]):
+            MessageDialog(self, '需要先在「分割」菜单中进行二值化')
+            return
+
+        self.__appendImg(contourTracing(self.__imgList[-1]))
+
+    # 霍夫直线变换槽函数
+    def __houghLineTransformSlot(self):
+        # 如果当前不是二值图像 则直接返回
+        if not isBinaryImage(self.__imgList[-1]):
+            MessageDialog(self, '需要先在「分割」菜单中进行二值化')
+            return
+
+        newImg, flag = houghLineTransform(self.__imgList[-1])
+        if flag:
+            self.__appendImg(newImg)
+        else:
+            MessageDialog(self, '未检测到直线')
+
+    # Harris特征检测槽函数
+    def __harrisFeatureDetectionSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
+            return
+
+        self.__appendImg(harrisFeatureDetection(self.__imgList[-1]))
+
+    # FAST特征检测槽函数
+    def __fastFeatureDetectionSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
+            return
+
+        self.__appendImg(fastFeatureDetection(self.__imgList[-1]))
+
+    # ORB特征检测槽函数
+    def __orbFeatureDetectionSlot(self):
+        # 如果当前不是灰度图 则直接返回
+        if not self.__imgList[-1].ndim == 2:
+            MessageDialog(self, '需要先在「基本」菜单中进行灰度化')
+            return
+
+        self.__appendImg(orbFeatureDetection(self.__imgList[-1]))
 
     # 弹出中心窗体
     def __popCenterWidget(self):

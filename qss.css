@@ -222,6 +222,18 @@ QPushButton[form="btn_light_big"]:pressed{
 	border-color: rgb(59, 119, 198);
 }
 
+/*浅色小按钮*/
+QPushButton[form="btn_light_small"]{
+	border: 1px solid rgb(201, 201, 201);
+	border-radius:5px;
+}
+QPushButton[form="btn_light_small"]:hover{
+	border-color: rgb(150, 150, 150);
+}
+QPushButton[form="btn_light_small"]:checked{
+	border-color: rgb(59, 119, 198);
+}
+
 /*输入框*/
 QLineEdit, QSpinBox{
 	border: 1px solid rgb(201, 201, 201);
