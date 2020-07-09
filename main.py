@@ -11,7 +11,7 @@ def main():
     a.setFont(QFont('Microsoft Yahei', 9))
 
     # 设置组织名和程序名以便使用QSettings
-    QCoreApplication.setOrganizationName('Grande')
+    QCoreApplication.setOrganizationName('Grand')
     QCoreApplication.setApplicationName('ImagePractice')
 
     w = Widget()
